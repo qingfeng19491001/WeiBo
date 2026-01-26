@@ -1,0 +1,10 @@
+# Project exclude paths
+/.gradle/
+/app/build/
+/app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/
+
+# Local Android SDK path
+local.properties
+
+# IDE
+.idea/workspace.xml
