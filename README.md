@@ -42,7 +42,22 @@
 ---
 
 ## 📸 项目展示
+### 亮点展示
+| 直播礼物特效 | 直播点赞喷射动画 | 视频双击点赞粒子动画 | 
+|:---:|:---:|:---:|
+| ![直播礼物特效](![a8be8c89a21fbf8e2ddf9945a0ea58f2](https://github.com/user-attachments/assets/64d46325-ccd6-44ca-85f8-e75b85eb8ae2)
+) | ![直播点赞喷射动画](![b66d51a6a0ac1c8ebc9f17803507e57c](https://github.com/user-attachments/assets/54408dfc-8c48-4c09-8605-dbca9527e22f)
+) | ![视频双击点赞粒子动画](![7a9b83d2c19e0a314353789a6aa7504e](https://github.com/user-attachments/assets/3dcb27f8-c599-4e3a-96e5-2454406b36b5)
+) |
 
+
+| 图片选择器、九宫格 | 大图预览 | 热搜列表吸顶 | 动画底部导航栏 |
+|:---:|:---:|:---:|:---:|
+| ![图片选择器、九宫格](![49504b17008c5e85b78072bef3636b1b](https://github.com/user-attachments/assets/a096dada-0e54-452b-ae09-7d8fe35b63cf)
+) | ![大图预览](![95862879c53b6f0666872a8456733ab4](https://github.com/user-attachments/assets/7f5a47d1-1d05-4292-9fe5-fa01fd5de49a)
+) | ![热搜列表吸顶](![75f82e4ab261e80f34bb52a5df04dfe7](https://github.com/user-attachments/assets/56b15983-2b43-475a-aa63-97efb9ea74db)
+) | ![动画底部导航栏](![9cda163454e17cfe7c83e453d3ad88db](https://github.com/user-attachments/assets/59083094-7517-4196-b649-9e4143ccef8a)
+) |
 
 
 ### 页面入口与演示路径
