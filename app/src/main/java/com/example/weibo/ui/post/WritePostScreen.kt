@@ -41,16 +41,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.weibo.R
+import com.example.weibo.core.ui.components.SystemBarsConfig
+import com.example.weibo.core.ui.components.TopBarBackground
+import com.example.weibo.core.ui.components.systemBarsConfigForTopBar
 import com.example.weibo.ui.picker.ImagePickerScreen
 import com.example.weibo.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.max
 
-
 @Composable
 fun WritePostScreen(
     onDismiss: () -> Unit,
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    onSystemBarsConfigChange: (com.example.weibo.core.ui.components.SystemBarsConfig) -> Unit = {}
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -62,9 +65,24 @@ fun WritePostScreen(
     var showEmojiPanel by remember { mutableStateOf(false) }
     var showImagePicker by remember { mutableStateOf(false) }
 
+    val writePostBarsConfig: SystemBarsConfig = remember {
+        systemBarsConfigForTopBar(
+            topBarBackground = TopBarBackground.Solid(Color.White),
+            statusBarIconsFallbackColor = Color.White,
+            statusBarColorFallbackColor = Color.White
+        ).copy(statusBarDarkIcons = true)
+    }
+
+    val pickerBarsConfig: SystemBarsConfig = remember {
+        systemBarsConfigForTopBar(
+            topBarBackground = TopBarBackground.Solid(Color(0xFF222222)),
+            statusBarIconsFallbackColor = Color(0xFF222222),
+            statusBarColorFallbackColor = Color(0xFF222222)
+        ).copy(statusBarDarkIcons = false, autoStatusBarIcons = false, autoStatusBarColor = true)
+    }
+
     val isSendButtonEnabled = content.text.isNotBlank() || selectedImages.isNotEmpty()
 
-    
     val userPrefs = remember {
         context.getSharedPreferences(
             "${context.packageName}_preferences",
@@ -73,7 +91,6 @@ fun WritePostScreen(
     }
     var username by remember { mutableStateOf(userPrefs.getString("nickname", "用户名") ?: "用户名") }
 
-    
     DisposableEffect(userPrefs) {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPrefs, key ->
             if (key == "nickname") {
@@ -86,7 +103,6 @@ fun WritePostScreen(
         }
     }
 
-    
     val emojis = remember {
         listOf(
             "😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊",
@@ -97,7 +113,6 @@ fun WritePostScreen(
     }
     val recentEmojis = remember { emojis.take(8) }
 
-    
     val onImagesSelected: (List<Uri>) -> Unit = { uris ->
         if (uris.isNotEmpty()) {
             val remaining = 18 - selectedImages.size
@@ -107,10 +122,10 @@ fun WritePostScreen(
                 android.widget.Toast.makeText(context, "最多只能选择18张图片", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
+        onSystemBarsConfigChange(writePostBarsConfig)
         showImagePicker = false
     }
 
-    
     var keyboardHeight by remember { mutableIntStateOf(0) }
     val scrollState = rememberScrollState()
 
@@ -121,7 +136,6 @@ fun WritePostScreen(
         }
     }
 
-    
     DisposableEffect(view) {
         val listener = android.view.ViewTreeObserver.OnGlobalLayoutListener {
             val rect = android.graphics.Rect()
@@ -135,16 +149,15 @@ fun WritePostScreen(
         }
     }
 
-    
     fun openImagePicker() {
         if (selectedImages.size >= 18) {
             android.widget.Toast.makeText(context, "最多只能选择18张图片", android.widget.Toast.LENGTH_SHORT).show()
             return
         }
+        onSystemBarsConfigChange(pickerBarsConfig)
         showImagePicker = true
     }
 
-    
     fun insertEmoji(emoji: String) {
         val text = content.text
         val selection = content.selection
@@ -157,7 +170,6 @@ fun WritePostScreen(
         )
     }
 
-    
     val sendButtonGradient = Brush.linearGradient(
         colors = listOf(
             Color(0xFFFFB74D),
@@ -165,10 +177,8 @@ fun WritePostScreen(
         )
     )
 
-    
     val emojiPanelHeight = 220.dp
 
-    
     val bottomBarModifier = Modifier
         .fillMaxWidth()
         .then(
@@ -304,11 +314,9 @@ fun WritePostScreen(
                                 .size(24.dp)
                                 .clickable {
                                     if (showEmojiPanel) {
-                                        
                                         showEmojiPanel = false
                                         keyboardController?.show()
                                     } else {
-                                        
                                         keyboardController?.hide()
                                         showEmojiPanel = true
                                     }
@@ -337,7 +345,6 @@ fun WritePostScreen(
             }
         }
     ) { paddingValues ->
-        
         val extraBottomPadding = if (showEmojiPanel) emojiPanelHeight else 0.dp
 
         Column(
@@ -397,14 +404,20 @@ fun WritePostScreen(
         ImagePickerScreen(
             alreadySelectedCount = selectedImages.size,
             maxSelectable = 18,
-            onDismiss = { showImagePicker = false },
+            onDismiss = {
+                onSystemBarsConfigChange(writePostBarsConfig)
+                showImagePicker = false
+            },
             onImagesSelected = onImagesSelected
         )
         return
     }
 }
 
-
+/**
+ * 图片网格 - 始终使用3×3布局
+ * 完全复原原项目的UI细节和功能
+ */
 @Composable
 private fun ImageGrid(
     images: List<Uri>,
@@ -469,9 +482,9 @@ private fun ImageGrid(
                             if (position == 8 && images.size > 9) {
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color.Black.copy(alpha = 0.6f))
-                                        .clip(RoundedCornerShape(8.dp)),
+                                        .matchParentSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.Black.copy(alpha = 0.6f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(

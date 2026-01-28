@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.zIndex
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
@@ -42,18 +43,22 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
         setContent {
-            MaterialTheme(
-                colors = lightColors(
-                    primary = Color(0xFFFF6600),
-                    background = Color.White,
-                    surface = Color.White
-                )
+            CompositionLocalProvider(
+                androidx.compose.foundation.LocalIndication provides com.example.weibo.core.ui.components.NoRippleIndication
             ) {
+                MaterialTheme(
+                    colors = lightColors(
+                        primary = Color(0xFFFF6600),
+                        background = Color.White,
+                        surface = Color.White
+                    )
+                ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
                     MainScreen()
+                }
                 }
             }
         }
@@ -74,6 +79,25 @@ fun MainScreen(
     var showChannelManager by remember { mutableStateOf(false) }
     var channelRefreshTrigger by remember { mutableIntStateOf(0) }
 
+    val homeFeedListState = rememberLazyListState()
+    val homeFollowListState = rememberLazyListState()
+
+    var imagePreviewData by remember {
+        mutableStateOf<Pair<List<String>, Int>?>(null)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.navigateToHomeFollow.collect {
+            showWritePost = false
+            showSettings = false
+            showTaskCenter = false
+            showHotSearchScreen = false
+            showChannelManager = false
+            viewModel.switchBottomNav(0)
+            viewModel.switchTab(1)
+        }
+    }
+
     
     val bottomNavItems = listOf(
         BottomNavItem("首页", R.raw.home_nav, "home"),
@@ -85,6 +109,16 @@ fun MainScreen(
 
     var hotSearchScreenSystemBarsConfig by remember {
         mutableStateOf(SystemBarsConfig(statusBarDarkIcons = false))
+    }
+
+    var writePostSystemBarsConfig by remember {
+        mutableStateOf(
+            systemBarsConfigForTopBar(
+                topBarBackground = TopBarBackground.Solid(Color.White),
+                statusBarIconsFallbackColor = Color.White,
+                statusBarColorFallbackColor = Color.White
+            ).copy(statusBarDarkIcons = true)
+        )
     }
 
     
@@ -104,11 +138,12 @@ fun MainScreen(
             
             hotSearchScreenSystemBarsConfig
         }
-        showWritePost -> systemBarsConfigForTopBar(
-            topBarBackground = TopBarBackground.Solid(Color.White),
-            statusBarIconsFallbackColor = Color.White,
-            statusBarColorFallbackColor = Color.White
-        ).copy(statusBarDarkIcons = true)
+        imagePreviewData != null -> systemBarsConfigForTopBar(
+            topBarBackground = TopBarBackground.Solid(Color.Black),
+            statusBarIconsFallbackColor = Color.Black,
+            statusBarColorFallbackColor = Color.Black
+        ).copy(statusBarDarkIcons = false, autoStatusBarIcons = false)
+        showWritePost -> writePostSystemBarsConfig
         showChannelManager -> systemBarsConfigForTopBar(
             topBarBackground = TopBarBackground.Solid(Color.White)
         )
@@ -188,7 +223,18 @@ fun MainScreen(
         showWritePost -> {
             com.example.weibo.ui.post.WritePostScreen(
                 onDismiss = { showWritePost = false },
-                viewModel = viewModel
+                viewModel = viewModel,
+                onSystemBarsConfigChange = { config ->
+                    writePostSystemBarsConfig = config
+                }
+            )
+        }
+        imagePreviewData != null -> {
+            val (urls, index) = imagePreviewData!!
+            com.example.weibo.ui.home.preview.ImagePreviewScreen(
+                imageUrls = urls,
+                currentPosition = index,
+                onDismiss = { imagePreviewData = null }
             )
         }
         showChannelManager -> {
@@ -248,10 +294,13 @@ fun MainScreen(
                     when (selectedIndex) {
                         0 -> HomeScreen(
                             viewModel = viewModel,
+                            feedListState = homeFeedListState,
+                            followListState = homeFollowListState,
                             onNavigateToTaskCenter = { showTaskCenter = true },
                             onNavigateToWritePost = { showWritePost = true },
-                            onNavigateToChannelManager = { showChannelManager = true },
-                            channelRefreshTrigger = channelRefreshTrigger
+                            onNavigateToImagePreview = { images, index ->
+                                imagePreviewData = Pair(images, index)
+                            }
                         )
                         1 -> VideoScreen(viewModel = videoViewModel)
                         2 -> DiscoverScreen(

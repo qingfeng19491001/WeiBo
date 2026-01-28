@@ -2,6 +2,7 @@ package com.example.weibo.ui.home.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -9,6 +10,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,7 +59,11 @@ fun HomeTopBar(
                     modifier = Modifier
                         .size(48.dp)
                         .padding(start = 16.dp)
-                        .clickable(onClick = onEditClick),
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onEditClick
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -80,7 +86,10 @@ fun HomeTopBar(
                     modifier = Modifier
                         .widthIn(min = 72.dp)
                         .fillMaxHeight()
-                        .clickable { onTabSelected(0) },
+                        .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onTabSelected(0) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -105,7 +114,10 @@ fun HomeTopBar(
                     modifier = Modifier
                         .widthIn(min = 72.dp)
                         .fillMaxHeight()
-                        .clickable { onTabSelected(1) },
+                        .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onTabSelected(1) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -141,7 +153,11 @@ fun HomeTopBar(
                         modifier = Modifier
                             .size(48.dp)
                             .padding(end = 12.dp)
-                            .clickable(onClick = onHomeClick),
+                            .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onHomeClick
+                        ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -157,7 +173,11 @@ fun HomeTopBar(
                         modifier = Modifier
                             .size(48.dp)
                             .padding(end = 8.dp)
-                            .clickable(onClick = onAddClick),
+                            .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onAddClick
+                        ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -207,7 +227,11 @@ fun HomeTopBar(
                     modifier = Modifier
                         .size(40.dp)
                         .padding(end = 12.dp)
-                        .clickable(onClick = onMoreChannelsClick),
+                        .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onMoreChannelsClick
+                    ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -243,7 +267,11 @@ private fun ChannelTag(
         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
         color = if (isSelected) Color.Black else Color(0xFF666666), 
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
             .padding(end = 24.dp)
     )
 }

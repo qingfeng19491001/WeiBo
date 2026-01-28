@@ -100,6 +100,7 @@ dependencies {
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.lottie)
@@ -109,6 +110,7 @@ dependencies {
     implementation(libs.glide.compose)
 
     implementation(libs.coil.compose)
+    implementation(libs.photoview)
     implementation("androidx.palette:palette-ktx:1.0.0")
 
     implementation(libs.androidx.media3.exoplayer)
@@ -116,6 +118,8 @@ dependencies {
     implementation(libs.androidx.media3.datasource.okhttp)
 
     implementation(libs.androidx.paging.compose)
+
+    implementation("com.github.yyued:SVGAPlayer-Android:2.6.1")
 
     implementation(libs.zxing.android.embedded)
     implementation(libs.zxing.core)

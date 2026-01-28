@@ -42,7 +42,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-
 class MediaPreviewActivity : ComponentActivity() {
 
     companion object {
@@ -117,10 +116,9 @@ class MediaPreviewActivity : ComponentActivity() {
 
     override fun finish() {
         super.finish()
-        overridePendingTransition(0, 0) 
+        overridePendingTransition(0, 0)
     }
 }
-
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -129,28 +127,25 @@ fun MediaPreviewScreen(
     startPosition: Int,
     onClose: () -> Unit
 ) {
-    
     val pagerState = rememberPagerState(
         initialPage = startPosition.coerceIn(0, mediaList.size - 1),
         pageCount = { mediaList.size }
     )
 
-    
     var currentPage by remember { mutableStateOf(pagerState.currentPage) }
     var dragOffset by remember { mutableStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
 
-    
     LaunchedEffect(pagerState.currentPage) {
         currentPage = pagerState.currentPage
-        dragOffset = 0f 
+        dragOffset = 0f
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .alpha(1f - abs(dragOffset)) 
+            .alpha(1f - abs(dragOffset))
     ) {
         HorizontalPager(
             state = pagerState,
@@ -163,7 +158,7 @@ fun MediaPreviewScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .offset { 
+                    .offset {
                         val yPx = (dragOffset * screenHeightPx).roundToInt()
                         IntOffset(0, yPx)
                     }
@@ -208,7 +203,6 @@ fun MediaPreviewScreen(
             }
         }
 
-        
         if (mediaList.size > 1) {
             Text(
                 text = "${currentPage + 1}/${mediaList.size}",
@@ -222,7 +216,6 @@ fun MediaPreviewScreen(
             )
         }
 
-        
         IconButton(
             onClick = onClose,
             modifier = Modifier

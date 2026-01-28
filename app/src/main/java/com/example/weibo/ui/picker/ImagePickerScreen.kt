@@ -33,17 +33,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import com.example.weibo.core.ui.components.TopBarBackground
+import com.example.weibo.core.ui.components.TopBarContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.util.Locale
-
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -106,28 +106,13 @@ fun ImagePickerScreen(
         }
     }
 
-    
     val images = remember(allMedia) { allMedia.filter { !it.isVideo } }
     val videos = remember(allMedia) { allMedia.filter { it.isVideo } }
 
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        
-        com.example.weibo.core.ui.components.StatusBarPlaceholder(
-            backgroundColor = Color(0xFF222222),
-            modifier = Modifier.zIndex(1000f)
-        )
-
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            
+    TopBarContainer(
+        topBarBackground = TopBarBackground.Solid(Color(0xFF222222)),
+        topBar = {
             TopAppBar(
-                modifier = Modifier.statusBarsPadding(),
                 title = {
                     Text(
                         text = "图片和视频",
@@ -148,163 +133,167 @@ fun ImagePickerScreen(
                     containerColor = Color(0xFF222222)
                 )
             )
-
-            
-            val selectedTabIndex = pagerState.currentPage
-            val tabWidths = remember {
-                val tabWidthStateList = mutableStateListOf<Dp>()
-                repeat(tabs.size) { tabWidthStateList.add(0.dp) }
-                tabWidthStateList
-            }
-            val density = androidx.compose.ui.platform.LocalDensity.current
-
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = Color(0xFF222222),
-                contentColor = Color.White,
-                indicator = { tabPositions ->
-                    if (tabPositions.isNotEmpty() && selectedTabIndex < tabPositions.size) {
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier
-                                .wrapContentSize(Alignment.BottomStart)
-                                .offset(
-                                    x = tabPositions[selectedTabIndex].left +
-                                        (tabPositions[selectedTabIndex].width - tabWidths[selectedTabIndex]) / 2
-                                )
-                                .width(tabWidths[selectedTabIndex]),
-                            height = 2.dp,
-                            color = Color(0xFFFF6600)
-                        )
-                    }
-                },
-                divider = {}
+        },
+        content = {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
             ) {
-                tabs.forEachIndexed { index, title ->
-                    val selected = selectedTabIndex == index
-                    Tab(
-                        selected = selected,
-                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                        text = {
-                            Text(
-                                text = title,
-                                fontSize = 16.sp,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selected) Color.White else Color(0xFF808080),
-                                onTextLayout = { textLayoutResult ->
-                                    tabWidths[index] = with(density) { textLayoutResult.size.width.toDp() }
-                                }
+                val selectedTabIndex = pagerState.currentPage
+                val tabWidths = remember {
+                    val tabWidthStateList = mutableStateListOf<Dp>()
+                    repeat(tabs.size) { tabWidthStateList.add(0.dp) }
+                    tabWidthStateList
+                }
+                val density = androidx.compose.ui.platform.LocalDensity.current
+
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = Color(0xFF222222),
+                    contentColor = Color.White,
+                    indicator = { tabPositions ->
+                        if (tabPositions.isNotEmpty() && selectedTabIndex < tabPositions.size) {
+                            TabRowDefaults.SecondaryIndicator(
+                                modifier = Modifier
+                                    .wrapContentSize(Alignment.BottomStart)
+                                    .offset(
+                                        x = tabPositions[selectedTabIndex].left +
+                                            (tabPositions[selectedTabIndex].width - tabWidths[selectedTabIndex]) / 2
+                                    )
+                                    .width(tabWidths[selectedTabIndex]),
+                                height = 2.dp,
+                                color = Color(0xFFFF6600)
                             )
                         }
-                    )
-                }
-            }
-
-            
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.weight(1f)
-            ) { page ->
-                when (page) {
-                    0 -> MediaGridContent(
-                        media = allMedia,
-                        selectedItems = selectedItems,
-                        maxSelectable = actualMaxSelectable,
-                        onItemClick = { item ->
-                            toggleSelection(
-                                item,
-                                selectedItems,
-                                actualMaxSelectable,
-                                context
-                            ) { newSelected ->
-                                selectedItems = newSelected
-                            }
-                        },
-                        onCameraClick = {
-                            openCamera(context, takePictureLauncher) { uri ->
-                                tempCameraUri = uri
-                            }
-                        },
-                        isLoading = isLoading
-                    )
-
-                    1 -> MediaGridContent(
-                        media = images,
-                        selectedItems = selectedItems,
-                        maxSelectable = actualMaxSelectable,
-                        onItemClick = { item ->
-                            toggleSelection(
-                                item,
-                                selectedItems,
-                                actualMaxSelectable,
-                                context
-                            ) { newSelected ->
-                                selectedItems = newSelected
-                            }
-                        },
-                        onCameraClick = {
-                            openCamera(context, takePictureLauncher) { uri ->
-                                tempCameraUri = uri
-                            }
-                        },
-                        isLoading = isLoading
-                    )
-
-                    2 -> MediaGridContent(
-                        media = videos,
-                        selectedItems = selectedItems,
-                        maxSelectable = actualMaxSelectable,
-                        onItemClick = { item ->
-                            toggleSelection(
-                                item,
-                                selectedItems,
-                                actualMaxSelectable,
-                                context
-                            ) { newSelected ->
-                                selectedItems = newSelected
-                            }
-                        },
-                        onCameraClick = null,
-                        isLoading = isLoading
-                    )
-                }
-            }
-
-            
-            Surface(
-                color = Color(0xFF222222),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                    },
+                    divider = {}
                 ) {
-                    Button(
-                        onClick = {
-                            onImagesSelected(selectedItems.map { it.uri })
-                            onDismiss()
-                        },
-                        enabled = selectedItems.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFFF6600),
-                            contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF666666),
-                            disabledContentColor = Color.White
-                        ),
-                        modifier = Modifier.padding(start = 24.dp, end = 24.dp)
-                    ) {
-                        Text(
-                            text = if (selectedItems.isNotEmpty()) "完成 (${selectedItems.size})" else "完成",
-                            fontSize = 14.sp
+                    tabs.forEachIndexed { index, title ->
+                        val selected = selectedTabIndex == index
+                        Tab(
+                            selected = selected,
+                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            text = {
+                                Text(
+                                    text = title,
+                                    fontSize = 16.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (selected) Color.White else Color(0xFF808080),
+                                    onTextLayout = { textLayoutResult ->
+                                        tabWidths[index] = with(density) { textLayoutResult.size.width.toDp() }
+                                    }
+                                )
+                            }
                         )
+                    }
+                }
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.weight(1f)
+                ) { page ->
+                    when (page) {
+                        0 -> MediaGridContent(
+                            media = allMedia,
+                            selectedItems = selectedItems,
+                            maxSelectable = actualMaxSelectable,
+                            onItemClick = { item ->
+                                toggleSelection(
+                                    item,
+                                    selectedItems,
+                                    actualMaxSelectable,
+                                    context
+                                ) { newSelected ->
+                                    selectedItems = newSelected
+                                }
+                            },
+                            onCameraClick = {
+                                openCamera(context, takePictureLauncher) { uri ->
+                                    tempCameraUri = uri
+                                }
+                            },
+                            isLoading = isLoading
+                        )
+
+                        1 -> MediaGridContent(
+                            media = images,
+                            selectedItems = selectedItems,
+                            maxSelectable = actualMaxSelectable,
+                            onItemClick = { item ->
+                                toggleSelection(
+                                    item,
+                                    selectedItems,
+                                    actualMaxSelectable,
+                                    context
+                                ) { newSelected ->
+                                    selectedItems = newSelected
+                                }
+                            },
+                            onCameraClick = {
+                                openCamera(context, takePictureLauncher) { uri ->
+                                    tempCameraUri = uri
+                                }
+                            },
+                            isLoading = isLoading
+                        )
+
+                        2 -> MediaGridContent(
+                            media = videos,
+                            selectedItems = selectedItems,
+                            maxSelectable = actualMaxSelectable,
+                            onItemClick = { item ->
+                                toggleSelection(
+                                    item,
+                                    selectedItems,
+                                    actualMaxSelectable,
+                                    context
+                                ) { newSelected ->
+                                    selectedItems = newSelected
+                                }
+                            },
+                            onCameraClick = null,
+                            isLoading = isLoading
+                        )
+                    }
+                }
+
+                Surface(
+                    color = Color(0xFF222222),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = {
+                                onImagesSelected(selectedItems.map { it.uri })
+                                onDismiss()
+                            },
+                            enabled = selectedItems.isNotEmpty(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFF6600),
+                                contentColor = Color.White,
+                                disabledContainerColor = Color(0xFF666666),
+                                disabledContentColor = Color.White
+                            ),
+                            modifier = Modifier.padding(start = 24.dp, end = 24.dp)
+                        ) {
+                            Text(
+                                text = if (selectedItems.isNotEmpty()) "完成 (${selectedItems.size})" else "完成",
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
         }
-    }
+    )
 }
 
 @Composable
@@ -331,7 +320,6 @@ private fun MediaGridContent(
             horizontalArrangement = Arrangement.spacedBy(1.dp),
             verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
-            
             if (onCameraClick != null) {
                 item {
                     CameraItem(onClick = onCameraClick)
@@ -430,7 +418,6 @@ private fun MediaGridItem(
             )
         }
 
-        
         if (item.isVideo && item.duration > 0) {
             Text(
                 text = formatDuration(item.duration),
@@ -443,7 +430,6 @@ private fun MediaGridItem(
             )
         }
 
-        
         if (isSelected) {
             Box(
                 modifier = Modifier
@@ -587,7 +573,6 @@ private suspend fun queryMedia(context: android.content.Context): List<MediaItem
     val images = queryImages(context)
     val videos = queryVideos(context)
 
-    
     val merged = ArrayList<MediaItem>(images.size + videos.size)
     var i = 0
     var j = 0

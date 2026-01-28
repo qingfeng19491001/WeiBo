@@ -4,25 +4,34 @@ import com.example.weibo.core.ui.components.TopBarContainer
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import android.content.Context
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weibo.R
 import kotlinx.coroutines.launch
-
+import kotlin.math.roundToInt
 
 data class DynamicItem(
     val id: Int,
@@ -33,7 +42,6 @@ data class DynamicItem(
     val hasVideo: Boolean = false,
     val videoDuration: String = ""
 )
-
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -226,6 +234,7 @@ fun DynamicsScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageListScreen(
     modifier: Modifier = Modifier
@@ -237,64 +246,159 @@ fun MessageListScreen(
     ) {
         MessageSearchBar()
 
-        Column(
+        val context = LocalContext.current
+        val prefs = remember {
+            context.getSharedPreferences("message_prefs", Context.MODE_PRIVATE)
+        }
+
+        val defaultItems = remember {
+            listOf(
+                MessageEntryItem(
+                    key = "at",
+                    iconRes = R.drawable.ic_messages_at,
+                    iconBgColor = Color(0xFF1E88E5),
+                    title = "@我的",
+                    onClick = { }
+                ),
+                MessageEntryItem(
+                    key = "comments",
+                    iconRes = R.drawable.ic_messages_comments,
+                    iconBgColor = Color(0xFF4CAF50),
+                    title = "评论",
+                    onClick = { }
+                ),
+                MessageEntryItem(
+                    key = "like",
+                    iconRes = R.drawable.ic_messages_like,
+                    iconBgColor = Color(0xFFFF9800),
+                    title = "赞",
+                    onClick = { /* TODO: 赞 */ }
+                )
+            )
+        }
+
+        fun loadOrderKeys(): List<String>? {
+            val raw = prefs.getString("message_entry_order", null) ?: return null
+            val keys = raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            return if (keys.isEmpty()) null else keys
+        }
+
+        fun applyOrder(keys: List<String>, items: List<MessageEntryItem>): List<MessageEntryItem> {
+            val byKey = items.associateBy { it.key }
+            val ordered = keys.mapNotNull { byKey[it] }
+            val remaining = items.filter { it.key !in keys.toSet() }
+            return ordered + remaining
+        }
+
+        var items by remember {
+            mutableStateOf(
+                loadOrderKeys()?.let { applyOrder(it, defaultItems) } ?: defaultItems
+            )
+        }
+
+        fun persistOrder(current: List<MessageEntryItem>) {
+            prefs.edit()
+                .putString("message_entry_order", current.joinToString(",") { it.key })
+                .apply()
+        }
+
+        ReorderableMessageEntryList(
+            items = items,
+            onMove = { from, to ->
+                items = items.toMutableList().apply {
+                    add(to, removeAt(from))
+                }
+                persistOrder(items)
+            },
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-        ) {
-            MessageListItem(
-                iconRes = R.drawable.ic_at,
-                iconBgColor = Color(0xFF1E88E5),
-                title = "@我的",
-                onClick = {  }
-            )
+        )
+    }
+}
 
-            HorizontalDivider(
-                color = Color(0xFFE0E0E0),
-                thickness = 1.dp,
-                modifier = Modifier.padding(start = 68.dp)
-            )
+private data class MessageEntryItem(
+    val key: String,
+    val iconRes: Int,
+    val iconBgColor: Color,
+    val title: String,
+    val onClick: () -> Unit
+)
 
-            MessageListItem(
-                iconRes = R.drawable.timeline_icon_comment,
-                iconBgColor = Color(0xFF4CAF50),
-                title = "评论",
-                onClick = {  }
-            )
+@Composable
+private fun ReorderableMessageEntryList(
+    items: List<MessageEntryItem>,
+    onMove: (fromIndex: Int, toIndex: Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val rowHeight = 62.dp
+    val rowHeightPx = with(LocalDensity.current) { rowHeight.toPx() }
 
-            HorizontalDivider(
-                color = Color(0xFFE0E0E0),
-                thickness = 1.dp,
-                modifier = Modifier.padding(start = 68.dp)
-            )
+    var draggingIndex by remember { mutableStateOf<Int?>(null) }
+    var dragOffsetY by remember { mutableStateOf(0f) }
 
-            MessageListItem(
-                iconRes = R.drawable.ic_like,
-                iconBgColor = Color(0xFFFF9800),
-                title = "赞",
-                onClick = {  }
-            )
+    Column(modifier = modifier) {
+        items.forEachIndexed { index, item ->
+            val isDragging = draggingIndex == index
 
-            HorizontalDivider(
-                color = Color(0xFFE0E0E0),
-                thickness = 1.dp,
-                modifier = Modifier.padding(start = 68.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(rowHeight)
+                    .pointerInput(items, draggingIndex, dragOffsetY) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                draggingIndex = index
+                                dragOffsetY = 0f
+                            },
+                            onDragCancel = {
+                                draggingIndex = null
+                                dragOffsetY = 0f
+                            },
+                            onDragEnd = {
+                                draggingIndex = null
+                                dragOffsetY = 0f
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
 
-            MessageListItemWithSubtitle(
-                iconRes = R.drawable.timeline_icon_comment,
-                iconBgColor = Color(0xFFE74C3C),
-                title = "留言板",
-                subtitle = "新手指南: http://t.cn/Ai3l7DVVu",
-                time = "22-6-5",
-                onClick = {  }
-            )
+                                val currentIndex = draggingIndex ?: return@detectDragGesturesAfterLongPress
+                                dragOffsetY += dragAmount.y
 
-            HorizontalDivider(
-                color = Color(0xFFE0E0E0),
-                thickness = 1.dp,
-                modifier = Modifier.padding(start = 68.dp)
-            )
+                                val movedSlots = (dragOffsetY / rowHeightPx).toInt()
+                                val targetIndex = (currentIndex + movedSlots).coerceIn(0, items.lastIndex)
+
+                                if (targetIndex != currentIndex) {
+                                    onMove(currentIndex, targetIndex)
+                                    draggingIndex = targetIndex
+                                    dragOffsetY -= (targetIndex - currentIndex) * rowHeightPx
+                                }
+                            }
+                        )
+                    }
+                    .offset { IntOffset(0, if (isDragging) dragOffsetY.roundToInt() else 0) }
+            ) {
+                MessageListItem(
+                    iconRes = item.iconRes,
+                    iconBgColor = item.iconBgColor,
+                    title = item.title,
+                    onClick = item.onClick,
+                    onLongPress = {
+                        draggingIndex = index
+                        dragOffsetY = 0f
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    enableClick = draggingIndex == null
+                )
+            }
+
+            if (index != items.lastIndex) {
+                HorizontalDivider(
+                    color = Color(0xFFEDEDED),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(start = 72.dp)
+                )
+            }
         }
     }
 }
@@ -337,13 +441,30 @@ private fun MessageListItem(
     iconBgColor: Color,
     title: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enableClick: Boolean = true,
+    onLongPress: (() -> Unit)? = null
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .height(60.dp)
-            .clickable(onClick = onClick),
+            .pointerInput(enableClick, onLongPress) {
+                detectTapGestures(
+                    onTap = {
+                        if (enableClick) {
+                            onClick()
+                        }
+                    },
+                    onLongPress = {
+                        if (enableClick) {
+                            onLongPress?.invoke()
+                        }
+                    }
+                )
+            },
         color = Color.White
     ) {
         Row(
@@ -354,32 +475,32 @@ private fun MessageListItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(iconBgColor, shape = androidx.compose.foundation.shape.CircleShape),
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color.Transparent),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
+                androidx.compose.foundation.Image(
                     painter = androidx.compose.ui.res.painterResource(id = iconRes),
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
             Text(
                 text = title,
-                fontSize = 16.sp,
-                color = Color.Black,
+                fontSize = 15.sp,
+                color = Color(0xFF333333),
                 modifier = Modifier.weight(1f)
             )
 
             Icon(
                 painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_arrow_right),
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = Color(0xFF999999)
+                modifier = Modifier.size(18.dp),
+                tint = Color(0xFFBDBDBD)
             )
         }
     }
@@ -511,7 +632,7 @@ private fun DynamicItem(
                 }
 
                 IconButton(
-                    onClick = {  },
+                    onClick = { /* TODO: 更多操作 */ },
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
@@ -555,7 +676,7 @@ private fun DynamicItem(
                         .fillMaxWidth()
                         .height(200.dp)
                         .background(Color(0xFFF0F0F0))
-                        .clickable {  }
+                        .clickable { /* TODO: 播放视频 */ }
                 ) {
                     Column(
                         modifier = Modifier.align(Alignment.Center),
@@ -601,7 +722,7 @@ private fun DynamicItem(
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable {  },
+                        .clickable { /* TODO: 评论 */ },
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -622,7 +743,7 @@ private fun DynamicItem(
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable {  },
+                        .clickable { /* TODO: 转发 */ },
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -643,7 +764,7 @@ private fun DynamicItem(
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable {  },
+                        .clickable { /* TODO: 点赞 */ },
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

@@ -19,7 +19,8 @@ class LiveStreamViewModel @Inject constructor() : ViewModel() {
             hostName = "主持人高杰",
             hostAvatarUrl = "https://example.com/avatar.png",
             viewerCount = "85.1万观看",
-            heatScore = "热度榜·1.3万热度"
+            heatScore = "热度榜·1.3万热度",
+            coverUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1600&q=80"
         )
     )
     val liveStreamInfo: StateFlow<LiveStreamInfo> = _liveStreamInfo.asStateFlow()
@@ -37,9 +38,9 @@ class LiveStreamViewModel @Inject constructor() : ViewModel() {
         viewModelScope.launch {
             val mockComments = listOf(
                 Comment(++commentIdCounter, "布要熬夜啦", "周深好棒!", 7),
-                Comment(++commentIdCounter, "潘美祖", "不好听！戴个佛珠吧", 7),
+                Comment(++commentIdCounter, "潘美祖", "好听！", 7),
                 Comment(++commentIdCounter, "潘美祖", "..................", 7),
-                Comment(++commentIdCounter, "潘美祖", "周深改个名字叫周末吧", 7)
+                Comment(++commentIdCounter, "潘美祖", "风来了永远的青春~", 7)
             )
 
             mockComments.forEach { comment ->
@@ -65,7 +66,7 @@ class LiveStreamViewModel @Inject constructor() : ViewModel() {
     }
 
     fun onFollowClicked() {
-        
+
     }
 }
 
@@ -74,6 +75,6 @@ data class LiveStreamInfo(
     val hostName: String,
     val hostAvatarUrl: String,
     val viewerCount: String,
-    val heatScore: String
+    val heatScore: String,
+    val coverUrl: String
 )
-

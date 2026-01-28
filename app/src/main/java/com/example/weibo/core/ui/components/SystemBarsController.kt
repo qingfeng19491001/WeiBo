@@ -9,27 +9,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-
 data class SystemBarsConfig(
     val immersive: Boolean = true,
-    
     val statusBarColor: Color = Color.Transparent,
     val navigationBarColor: Color = Color.Transparent,
-
-    
     val statusBarDarkIcons: Boolean? = null,
     val navigationBarDarkIcons: Boolean? = null,
-
-    
-    
     val autoStatusBarIcons: Boolean = true,
-    
     val autoStatusBarColor: Boolean = true,
-
-    
     val topBarBackground: TopBarBackground? = null,
-
-    
     val statusBarIconsFallbackColor: Color = Color.White,
     val statusBarColorFallbackColor: Color = Color.Transparent
 )
@@ -68,7 +56,6 @@ fun SetupSystemBars(
         androidx.compose.runtime.mutableStateOf<Color?>(null)
     }
 
-    
     androidx.compose.runtime.LaunchedEffect(
         config.autoStatusBarIcons,
         config.autoStatusBarColor,
@@ -76,7 +63,6 @@ fun SetupSystemBars(
         config.statusBarIconsFallbackColor,
         config.statusBarColorFallbackColor
     ) {
-        
         computedStatusBarDarkIcons.value = null
         computedStatusBarColor.value = null
 
@@ -128,11 +114,9 @@ fun SetupSystemBars(
     SideEffect {
         val window = activity?.window ?: return@SideEffect
 
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, !config.immersive)
 
-        
-        
-        window.statusBarColor = Color.Transparent.toArgb()
+        window.statusBarColor = finalStatusBarColor.toArgb()
         window.navigationBarColor = config.navigationBarColor.toArgb()
 
         val controller = WindowCompat.getInsetsController(window, window.decorView)

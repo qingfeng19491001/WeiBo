@@ -7,6 +7,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,12 +15,9 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextOverflow
-import com.example.weibo.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,28 +29,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
-import android.util.Log
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.example.weibo.R
+import com.example.weibo.database.entity.VideoBean
+import com.example.weibo.util.TimeUtils
+import com.example.weibo.util.VideoUrlResolver
+import com.example.weibo.video.player.ExoVideoPlayerManager
+import com.example.weibo.video.player.ExoVideoPlayerView
+import com.example.weibo.viewmodel.VideoViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
-import com.example.weibo.database.entity.VideoBean
-import com.example.weibo.util.TimeUtils
-import com.example.weibo.util.VideoUrlResolver
-import com.example.weibo.video.player.ExoVideoPlayerView
-import com.example.weibo.video.player.ExoVideoPlayerManager
-import com.example.weibo.viewmodel.VideoViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -68,7 +69,6 @@ fun VideoScreen(
 
     val pagerState = rememberPagerState(initialPage = 0) { 2 }
 
-    
     LaunchedEffect(selectedTab) {
         val targetPage = when (selectedTab) {
             VideoViewModel.TabType.RECOMMEND -> 0
@@ -79,7 +79,6 @@ fun VideoScreen(
         }
     }
 
-    
     LaunchedEffect(pagerState.currentPage) {
         val targetTab = when (pagerState.currentPage) {
             0 -> VideoViewModel.TabType.RECOMMEND
@@ -98,7 +97,6 @@ fun VideoScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        
         VideoTabBar(
             selectedTab = selectedTab,
             backgroundColor = topBarBg,
@@ -107,7 +105,6 @@ fun VideoScreen(
             }
         )
 
-        
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
@@ -119,38 +116,31 @@ fun VideoScreen(
                     error = error,
                     onRefresh = { viewModel.refreshRecommend() },
                     onVideoClick = { position ->
-                        
                         viewModel.requestPlayPosition(position)
                     },
                     onLikeClick = { position ->
                         viewModel.toggleLike(position)
                     },
-                    onCommentClick = { position ->
-                        
-                    },
-                    onShareClick = { position ->
-                        
-                    },
+                    onCommentClick = { _ -> },
+                    onShareClick = { _ -> },
                     onLoadMore = {
                         viewModel.loadMore()
                     },
                     viewModel = viewModel
                 )
+
                 1 -> VideoFeaturedScreen(
                     videos = featuredVideos,
                     isLoading = isLoading,
                     error = error,
                     onRefresh = { viewModel.refreshFeatured() },
                     onVideoClick = { position, video ->
-                        
-                        
                         val recommendList = recommendVideos
                         val recommendPosition = recommendList.indexOfFirst { it.resolvedBvid() == video.resolvedBvid() }
                         if (recommendPosition >= 0) {
                             viewModel.selectTab(VideoViewModel.TabType.RECOMMEND)
                             viewModel.requestPlayPosition(recommendPosition)
                         } else {
-                            
                             viewModel.selectTab(VideoViewModel.TabType.RECOMMEND)
                             viewModel.requestPlayPosition(0)
                         }
@@ -183,7 +173,6 @@ private fun VideoTabBar(
                 .padding(horizontal = 60.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            
             VideoTab(
                 text = "推荐",
                 isSelected = selectedTab == VideoViewModel.TabType.RECOMMEND,
@@ -192,7 +181,6 @@ private fun VideoTabBar(
                 modifier = Modifier.weight(1f)
             )
 
-            
             VideoTab(
                 text = "精选",
                 isSelected = selectedTab == VideoViewModel.TabType.FEATURED,
@@ -212,21 +200,12 @@ private fun VideoTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    
-    
-    
-    val textColor: Color
-    val indicatorColor: Color
-    
-    
-    
     val selectedColor = if (isDarkBackground) Color.White else Color(0xFFFF8200)
     val unselectedColor = if (isDarkBackground) Color(0xFFB0B0B0) else Color(0xFF666666)
 
-    textColor = if (isSelected) selectedColor else unselectedColor
-    indicatorColor = if (isSelected) selectedColor else Color.Transparent
+    val textColor = if (isSelected) selectedColor else unselectedColor
+    val indicatorColor = if (isSelected) selectedColor else Color.Transparent
 
-    
     var textWidth by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
 
@@ -245,12 +224,11 @@ private fun VideoTab(
             color = textColor,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(vertical = 12.dp),
-            onTextLayout = { layoutResult ->
+            onTextLayout = { layoutResult: TextLayoutResult ->
                 textWidth = with(density) { layoutResult.size.width.toDp() }
             }
         )
 
-        
         Box(
             modifier = Modifier
                 .then(
@@ -265,7 +243,6 @@ private fun VideoTab(
         )
     }
 }
-
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -285,14 +262,13 @@ fun VideoRecommendScreen(
     val playPosition by viewModel.playPosition.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
         if (videos.isEmpty() && !isLoading) {
-            
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -304,7 +280,6 @@ fun VideoRecommendScreen(
                 )
             }
         } else if (videos.isNotEmpty()) {
-            
             var didPreResolveFirst by remember { mutableStateOf(false) }
             LaunchedEffect(videos.size) {
                 if (!didPreResolveFirst && videos.isNotEmpty()) {
@@ -312,10 +287,9 @@ fun VideoRecommendScreen(
                     viewModel.preResolveAround(0, radius = 1)
                 }
             }
-            
+
             val verticalPagerState = rememberPagerState(initialPage = 0) { videos.size }
-            
-            
+
             LaunchedEffect(verticalPagerState.currentPage) {
                 val currentPage = verticalPagerState.currentPage
                 if (currentPage in videos.indices) {
@@ -323,7 +297,6 @@ fun VideoRecommendScreen(
                 }
             }
 
-            
             var lastSettledPage by remember { mutableIntStateOf(0) }
             var preloadJob by remember { mutableStateOf<Job?>(null) }
             LaunchedEffect(verticalPagerState.isScrollInProgress) {
@@ -341,10 +314,8 @@ fun VideoRecommendScreen(
                     if (targetIndex in videos.indices) {
                         preloadJob?.cancel()
                         preloadJob = launch {
-                            
                             viewModel.preResolveAround(targetIndex, radius = 0)
 
-                            
                             val targetVideo = videos[targetIndex]
                             val tag = "douyin_video_${targetVideo.resolvedBvid()}"
                             val start = System.currentTimeMillis()
@@ -356,7 +327,6 @@ fun VideoRecommendScreen(
                                 }
                             }
 
-                            
                             if (!resolved.isNullOrBlank()) {
                                 ExoVideoPlayerManager.getInstance(context).preloadVideo(resolved!!, tag)
                             }
@@ -364,29 +334,18 @@ fun VideoRecommendScreen(
                     }
                 }
             }
-            
-            
-            var currentPlayingPosition by remember { mutableStateOf<Int?>(null) }
+
             var pausedByScroll by remember { mutableStateOf(false) }
-            
-            
+
             LaunchedEffect(verticalPagerState.isScrollInProgress) {
                 if (verticalPagerState.isScrollInProgress) {
-                    
-                    currentPlayingPosition = verticalPagerState.currentPage
                     pausedByScroll = true
                     viewModel.clearPlayPosition()
                 } else {
-                    
                     pausedByScroll = false
                 }
             }
-            
-            
-            LaunchedEffect(verticalPagerState.currentPage) {
-                currentPlayingPosition = verticalPagerState.currentPage
-            }
-            
+
             VerticalPager(
                 state = verticalPagerState,
                 modifier = Modifier.fillMaxSize(),
@@ -405,8 +364,7 @@ fun VideoRecommendScreen(
                     onLoadMore = onLoadMore
                 )
             }
-            
-            
+
             LaunchedEffect(verticalPagerState.currentPage) {
                 if (verticalPagerState.currentPage >= videos.size - 2) {
                     onLoadMore()
@@ -451,34 +409,30 @@ private fun VideoRecommendItem(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    
-    
+
     var playerView by remember { mutableStateOf<ExoVideoPlayerView?>(null) }
 
-    
     LaunchedEffect(isCurrentPage, playerView) {
         if (!isCurrentPage) {
             playerView?.onPlaybackEnded = null
             playerView?.pausePlay()
         }
     }
+
     var resolvedVideoUrl by remember { mutableStateOf<String?>(null) }
     var isMuted by remember { mutableStateOf(false) }
     var showPlayPauseIcon by remember { mutableStateOf(false) }
-    
-    
+
     val likeAnimationScale = remember { Animatable(0.5f) }
     val likeAnimationAlpha = remember { Animatable(0f) }
     var showLikeAnimation by remember { mutableStateOf(false) }
-    
-    
+
     LaunchedEffect(video.videoUrl, isCurrentPage) {
         if (isCurrentPage && resolvedVideoUrl == null && video.videoUrl.isNotEmpty()) {
             resolvedVideoUrl = viewModel.getResolvedUrlFromCache(video) ?: VideoUrlResolver.resolvePlayUrl(video.videoUrl)
         }
     }
-    
-    
+
     LaunchedEffect(isCurrentPage, resolvedVideoUrl, playerView) {
         if (isCurrentPage && resolvedVideoUrl != null && playerView != null) {
             playerView?.let { view ->
@@ -486,9 +440,7 @@ private fun VideoRecommendItem(
                 view.setVideoData(resolvedVideoUrl!!, video.coverUrl, viewTag, true)
                 view.startPlay()
 
-                
                 view.onPlaybackEnded = fun() {
-                    
                     if (!isCurrentPage) {
                         return
                     }
@@ -500,9 +452,8 @@ private fun VideoRecommendItem(
                     val currentVideos = viewModel.recommendVideoList.value
                     val nextPosition = position + 1
                     if (nextPosition in currentVideos.indices) {
-                        
                         scope.launch {
-                            kotlinx.coroutines.delay(100)
+                            delay(100)
                             pagerState.animateScrollToPage(nextPosition)
                         }
                     } else {
@@ -511,74 +462,61 @@ private fun VideoRecommendItem(
                 }
             }
         } else if (!isCurrentPage && playerView != null) {
-            
             playerView?.pausePlay()
         }
     }
-    
-    
-    
-    
+
     LaunchedEffect(showLikeAnimation) {
         if (showLikeAnimation) {
             likeAnimationScale.snapTo(0.5f)
             likeAnimationAlpha.snapTo(1f)
-            
             likeAnimationScale.animateTo(
                 targetValue = 1.2f,
                 animationSpec = tween(200, easing = FastOutSlowInEasing)
             )
-            
             likeAnimationScale.animateTo(
                 targetValue = 1f,
                 animationSpec = tween(200, easing = FastOutSlowInEasing)
             )
-            
             likeAnimationAlpha.animateTo(
                 targetValue = 0f,
                 animationSpec = tween(400, easing = FastOutSlowInEasing)
             )
-            kotlinx.coroutines.delay(400)
+            delay(400)
             showLikeAnimation = false
         }
     }
-    
-    
+
     LaunchedEffect(showPlayPauseIcon) {
         if (showPlayPauseIcon) {
-            kotlinx.coroutines.delay(500)
+            delay(500)
             showPlayPauseIcon = false
         }
     }
-    
+
+    val likeButtonScale = remember { Animatable(1f) }
+    var burstToken by remember { mutableIntStateOf(0) }
+
+    var overlayBurstToken by remember { mutableIntStateOf(0) }
+    var lastDoubleTapOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var lastDoubleTapAtMs by remember { mutableStateOf(0L) }
+
+    fun triggerLikeAnimations() {
+        scope.launch {
+            likeButtonScale.stop()
+            likeButtonScale.snapTo(0.85f)
+            likeButtonScale.animateTo(1.25f, tween(120, easing = FastOutSlowInEasing))
+            likeButtonScale.animateTo(1f, tween(160, easing = FastOutSlowInEasing))
+        }
+        burstToken += 1
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onDoubleTap = { offset ->
-                        
-                        showLikeAnimation = true
-                        onLikeClick()
-                    },
-                    onTap = {
-                        
-                        playerView?.let { view ->
-                            val wasPlaying = view.isPlaying()
-                            view.togglePlayPause()
-                            
-                            
-                            val isPausedState = wasPlaying 
-                            showPlayPauseIcon = true
-                            
-                            view.showControlBarWithAutoHide()
-                        }
-                    }
-                )
-            }
+            
     ) {
-        
         AndroidView(
             factory = { ctx ->
                 ExoVideoPlayerView(ctx).apply {
@@ -588,46 +526,86 @@ private fun VideoRecommendItem(
             },
             modifier = Modifier.fillMaxSize()
         )
-        
-        
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = { offset ->
+                            lastDoubleTapAtMs = System.currentTimeMillis()
+                            lastDoubleTapOffset = offset
+                            overlayBurstToken += 1
+                            showLikeAnimation = true
+
+                            triggerLikeAnimations()
+
+                            if (!video.isLiked) {
+                                viewModel.like(position)
+                            }
+                        },
+                        onTap = {
+                            val tapAt = System.currentTimeMillis()
+                            scope.launch {
+                                delay(1000)
+                                if (lastDoubleTapAtMs < tapAt) {
+                                    playerView?.let { view ->
+                                        view.togglePlayPause()
+                                        showPlayPauseIcon = true
+                                        view.showControlBarWithAutoHide()
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+        )
+
+        val density = LocalDensity.current
+        val burstStartPx = with(density) { 28.dp.toPx() }
+        val burstEndPx = with(density) { 180.dp.toPx() }
+        val likeHalfSizePx = with(density) { 60.dp.toPx() }
+
+        LikeBurstOverlay(
+            play = overlayBurstToken,
+            center = lastDoubleTapOffset,
+            modifier = Modifier.fillMaxSize(),
+            startRadiusPx = burstStartPx,
+            endRadiusPx = burstEndPx
+        )
+
         if (showLikeAnimation) {
             Icon(
-                painter = androidx.compose.ui.res.painterResource(id = com.example.weibo.R.drawable.ic_like),
+                painter = painterResource(id = R.drawable.ic_like),
                 contentDescription = null,
                 modifier = Modifier
-                    .align(Alignment.Center)
+                    .offset(
+                        x = with(density) { (lastDoubleTapOffset.x - likeHalfSizePx).toDp() },
+                        y = with(density) { (lastDoubleTapOffset.y - likeHalfSizePx).toDp() }
+                    )
                     .size(120.dp)
                     .scale(likeAnimationScale.value)
                     .alpha(likeAnimationAlpha.value),
-                tint = Color.White
+                tint = Color(0xFFFF8200)
             )
         }
-        
-        
-        
-        
+
         var isPausedState by remember { mutableStateOf(false) }
-        
-        
+
         LaunchedEffect(playerView, isCurrentPage) {
             if (playerView != null && isCurrentPage) {
-                
                 while (kotlinx.coroutines.currentCoroutineContext().isActive) {
                     val isPlaying = playerView?.isPlaying() ?: false
                     isPausedState = !isPlaying
-                    kotlinx.coroutines.delay(100)
+                    delay(100)
                 }
             }
         }
-        
+
         if (showPlayPauseIcon) {
             Icon(
-                painter = androidx.compose.ui.res.painterResource(
-                    
-                    id = if (isPausedState) 
-                        com.example.weibo.R.drawable.ic_play 
-                    else 
-                        com.example.weibo.R.drawable.ic_pause
+                painter = painterResource(
+                    id = if (isPausedState) R.drawable.ic_play else R.drawable.ic_pause
                 ),
                 contentDescription = null,
                 modifier = Modifier
@@ -636,21 +614,19 @@ private fun VideoRecommendItem(
                 tint = Color.White
             )
         }
-        
-        
+
         var showMuteButton by remember { mutableStateOf(false) }
         LaunchedEffect(showMuteButton) {
             if (showMuteButton) {
-                kotlinx.coroutines.delay(2000)
+                delay(2000)
                 showMuteButton = false
             }
         }
-        
+
         if (showMuteButton) {
             IconButton(
                 onClick = {
                     isMuted = !isMuted
-                    
                     showMuteButton = true
                 },
                 modifier = Modifier
@@ -658,11 +634,8 @@ private fun VideoRecommendItem(
                     .padding(16.dp)
             ) {
                 Icon(
-                    painter = androidx.compose.ui.res.painterResource(
-                        id = if (isMuted) 
-                            com.example.weibo.R.drawable.ic_volume_off 
-                        else 
-                            com.example.weibo.R.drawable.ic_volume_up
+                    painter = painterResource(
+                        id = if (isMuted) R.drawable.ic_volume_off else R.drawable.ic_volume_up
                     ),
                     contentDescription = "静音",
                     modifier = Modifier.size(24.dp),
@@ -671,29 +644,45 @@ private fun VideoRecommendItem(
             }
         }
 
-        
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 90.dp), 
+                .padding(end = 16.dp, bottom = 90.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(bottom = 24.dp)
             ) {
-                IconButton(
-                    onClick = onLikeClick,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        painter = androidx.compose.ui.res.painterResource(id = com.example.weibo.R.drawable.timeline_icon_unlike),
-                        contentDescription = "点赞",
-                        modifier = Modifier.size(24.dp),
-                        tint = if (video.isLiked) Color(0xFFFF6B6B) else Color.White 
+                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    LikeBurstEffect(
+                        play = burstToken,
+                        modifier = Modifier
+                            .matchParentSize()
                     )
+
+                    IconButton(
+                        onClick = {
+                            if (video.isLiked) {
+                                viewModel.unlike(position)
+                            } else {
+                                triggerLikeAnimations()
+                                viewModel.like(position)
+                            }
+                        },
+                        modifier = Modifier
+                            .matchParentSize()
+                            .scale(likeButtonScale.value)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.timeline_icon_unlike),
+                            contentDescription = "点赞",
+                            modifier = Modifier.size(24.dp),
+                            tint = if (video.isLiked) Color(0xFFFF8200) else Color.White
+                        )
+                    }
                 }
+
                 Text(
                     text = TimeUtils.formatCount(video.likeCount),
                     color = Color.White,
@@ -702,7 +691,6 @@ private fun VideoRecommendItem(
                 )
             }
 
-            
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(bottom = 24.dp)
@@ -712,7 +700,7 @@ private fun VideoRecommendItem(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        painter = androidx.compose.ui.res.painterResource(id = com.example.weibo.R.drawable.timeline_icon_comment),
+                        painter = painterResource(id = R.drawable.timeline_icon_comment),
                         contentDescription = "评论",
                         modifier = Modifier.size(24.dp),
                         tint = Color.White
@@ -726,16 +714,13 @@ private fun VideoRecommendItem(
                 )
             }
 
-            
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
                     onClick = onShareClick,
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        painter = androidx.compose.ui.res.painterResource(id = com.example.weibo.R.drawable.timeline_icon_redirect),
+                        painter = painterResource(id = R.drawable.timeline_icon_redirect),
                         contentDescription = "分享",
                         modifier = Modifier.size(24.dp),
                         tint = Color.White
@@ -750,21 +735,17 @@ private fun VideoRecommendItem(
             }
         }
 
-        
-        
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
                 .background(
-                    
                     brush = Brush.verticalGradient(
                         colors = listOf(Color.Transparent, Color(0xCC000000))
                     )
                 )
                 .padding(16.dp)
         ) {
-            
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -774,13 +755,13 @@ private fun VideoRecommendItem(
                     contentDescription = null,
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape),
+                        .clip(CircleShape),
                     contentScale = ContentScale.Crop,
-                    placeholder = androidx.compose.ui.res.painterResource(id = com.example.weibo.R.drawable.avatar_placeholder)
+                    placeholder = painterResource(id = R.drawable.avatar_placeholder)
                 )
-                
+
                 Spacer(modifier = Modifier.width(12.dp))
-                
+
                 Text(
                     text = "@${video.username}",
                     color = Color.White,
@@ -789,7 +770,6 @@ private fun VideoRecommendItem(
                 )
             }
 
-            
             Text(
                 text = video.description,
                 color = Color.White,
@@ -798,20 +778,17 @@ private fun VideoRecommendItem(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            
             if (video.musicName.isNotBlank()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        painter = androidx.compose.ui.res.painterResource(id = com.example.weibo.R.drawable.ic_music),
+                        painter = painterResource(id = R.drawable.ic_music),
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = Color.White
                     )
-                    
+
                     Spacer(modifier = Modifier.width(4.dp))
-                    
+
                     Text(
                         text = video.musicName,
                         color = Color.White,
@@ -822,7 +799,6 @@ private fun VideoRecommendItem(
         }
     }
 }
-
 
 @Composable
 fun VideoFeaturedScreen(
@@ -840,7 +816,6 @@ fun VideoFeaturedScreen(
             .background(Color.White)
     ) {
         if (videos.isEmpty() && !isLoading) {
-            
             Column(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -852,7 +827,6 @@ fun VideoFeaturedScreen(
                 )
             }
         } else {
-            
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
@@ -864,12 +838,10 @@ fun VideoFeaturedScreen(
                     VideoFeaturedItem(
                         video = video,
                         onClick = { onVideoClick(index, video) },
-                        modifier = Modifier
-                            .fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
-                
-                
+
                 item {
                     LaunchedEffect(Unit) {
                         if (videos.isNotEmpty()) {
@@ -913,10 +885,7 @@ private fun VideoFeaturedItem(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            
+        Column(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -928,8 +897,7 @@ private fun VideoFeaturedItem(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                
-                
+
                 if (video.durationSec > 0) {
                     Text(
                         text = TimeUtils.formatDuration(video.durationSec),
@@ -943,8 +911,7 @@ private fun VideoFeaturedItem(
                             .padding(top = 4.dp, end = 4.dp)
                     )
                 }
-                
-                
+
                 Icon(
                     painter = painterResource(id = R.drawable.ic_play),
                     contentDescription = "播放",
@@ -959,15 +926,13 @@ private fun VideoFeaturedItem(
                     tint = Color.White
                 )
             }
-            
-            
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White)
                     .padding(8.dp)
             ) {
-                
                 Text(
                     text = video.description.ifEmpty { "视频标题" },
                     color = Color.Black,
@@ -977,13 +942,11 @@ private fun VideoFeaturedItem(
                     lineHeight = 16.sp,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
-                    
                     AsyncImage(
                         model = video.avatarUrl,
                         contentDescription = "作者头像",
@@ -992,8 +955,7 @@ private fun VideoFeaturedItem(
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
-                    
-                    
+
                     Text(
                         text = "@${video.username}",
                         color = Color(0xFF666666),
@@ -1004,8 +966,7 @@ private fun VideoFeaturedItem(
                             .padding(start = 4.dp)
                             .weight(1f)
                     )
-                    
-                    
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(start = 4.dp)
@@ -1013,7 +974,7 @@ private fun VideoFeaturedItem(
                         Icon(
                             painter = painterResource(id = R.drawable.timeline_icon_unlike),
                             contentDescription = "点赞",
-                            tint = if (video.isLiked) Color(0xFFFF6B6B) else Color(0xFF999999),
+                            tint = if (video.isLiked) Color(0xFFFF8200) else Color(0xFF999999),
                             modifier = Modifier.size(12.dp)
                         )
                         Text(

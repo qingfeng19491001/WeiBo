@@ -40,6 +40,9 @@ lottieCompose = "6.1.0"
 zxing = "4.3.0"
 zxingCore = "3.5.2"
 
+# PhotoView
+photoview = "2.3.0"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -76,6 +79,7 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
 
 # Compose
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -101,6 +105,9 @@ lottie-compose = { group = "com.airbnb.android", name = "lottie-compose", versio
 zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxing" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxingCore" }
 androidx-multidex = { group = "androidx.multidex", name = "multidex", version = "2.0.1" }
+
+# PhotoView
+photoview = { group = "com.github.chrisbanes", name = "PhotoView", version.ref = "photoview" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

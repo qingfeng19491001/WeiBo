@@ -79,8 +79,6 @@ fun ClassicsSwipeRefresh(
         )
     }
 
-    
-    
     val maxRefreshingMs = 1200L
 
     LaunchedEffect(isRefreshing) {
@@ -93,7 +91,6 @@ fun ClassicsSwipeRefresh(
             }
         } else {
             if (uiState == RefreshUiState.Refreshing) {
-                
                 uiState = RefreshUiState.Finished
                 scope.launch {
                     kotlinx.coroutines.delay(450)
@@ -119,10 +116,6 @@ fun ClassicsSwipeRefresh(
     }
 
     Box(modifier = modifier.nestedScroll(connection)) {
-        Box(modifier = Modifier.offset { IntOffset(0, offsetPx.roundToInt()) }) {
-            content()
-        }
-
         if (offsetPx > 0f || uiState == RefreshUiState.Refreshing || uiState == RefreshUiState.Finished) {
             ClassicsHeader(
                 modifier = Modifier.align(Alignment.TopCenter),
@@ -135,6 +128,10 @@ fun ClassicsSwipeRefresh(
                 textColor = textColor,
                 showShadow = showShadow
             )
+        }
+
+        Box(modifier = Modifier.offset { IntOffset(0, offsetPx.roundToInt()) }) {
+            content()
         }
     }
 }
@@ -156,7 +153,6 @@ private class ClassicsRefreshNestedScrollConnection(
 
         val offset = getOffset()
 
-        
         if (abs(available.x) > abs(available.y) * 1.2f) {
             isHorizontalDrag = true
             return Offset.Zero
@@ -166,10 +162,9 @@ private class ClassicsRefreshNestedScrollConnection(
         }
         if (isHorizontalDrag) return Offset.Zero
 
-        
         if (available.y < 0f && offset > 0f) {
             val newOffset = (offset + available.y).coerceAtLeast(0f)
-            val consumedY = newOffset - offset 
+            val consumedY = newOffset - offset // negative
             onOffsetChanged(newOffset)
             if (newOffset == 0f) onUiStateChanged(RefreshUiState.Idle)
             return Offset(0f, consumedY)
@@ -181,16 +176,13 @@ private class ClassicsRefreshNestedScrollConnection(
     override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
         if (!enabled || source != NestedScrollSource.Drag || isHorizontalDrag) return Offset.Zero
 
-        
         if (available.y > 0f) {
             val currentOffset = getOffset()
 
-            
             val progress = (currentOffset / headerHeightPx).coerceIn(0f, 2f)
-            val resistance = 1.2f + progress * 1.6f 
+            val resistance = 1.2f + progress * 1.6f // 1.2 -> 4.4
             val delta = available.y / resistance
 
-            
             val max = headerHeightPx * 1.35f
             val newOffset = (currentOffset + delta).coerceIn(0f, max)
             onOffsetChanged(newOffset)
@@ -202,7 +194,6 @@ private class ClassicsRefreshNestedScrollConnection(
     }
 
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-        
         if (!enabled) return Velocity.Zero
         if (isHorizontalDrag) {
             isHorizontalDrag = false
@@ -213,14 +204,12 @@ private class ClassicsRefreshNestedScrollConnection(
         if (offset <= 0f) return Velocity.Zero
 
         if (offset >= headerHeightPx) {
-            
             onUiStateChanged(RefreshUiState.Refreshing)
             scope.launch {
                 animate(offset, headerHeightPx, animationSpec = tween(160)) { v, _ -> onOffsetChanged(v) }
                 onRefresh()
             }
         } else {
-            
             scope.launch {
                 animate(offset, 0f, animationSpec = tween(190)) { v, _ -> onOffsetChanged(v) }
                 onUiStateChanged(RefreshUiState.Idle)
@@ -245,7 +234,6 @@ private fun ClassicsHeader(
 ) {
     var rotationAngle by remember { mutableFloatStateOf(0f) }
     
-    
     val pullProgress = (offsetPx / headerHeightPx).coerceIn(0f, 1f)
     val pullRotation by animateFloatAsState(
         targetValue = pullProgress * 180f,
@@ -253,8 +241,8 @@ private fun ClassicsHeader(
         label = "pullRotation"
     )
     
-    
-    
+    // 刷新时的旋转动画（类似backup项目的WeiboRefreshHeader）
+    // 注意：使用 key 控制协程生命周期，避免无限循环导致无法进入“刷新成功”
     LaunchedEffect(uiState) {
         if (uiState == RefreshUiState.Refreshing) {
             while (uiState == RefreshUiState.Refreshing) {
@@ -266,7 +254,7 @@ private fun ClassicsHeader(
         }
     }
     
-    
+    // 使用animateFloatAsState来实现平滑的旋转动画
     val animatedRotation by animateFloatAsState(
         targetValue = rotationAngle,
         animationSpec = tween(1000),
@@ -292,7 +280,7 @@ private fun ClassicsHeader(
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center
         ) {
             if (uiState == RefreshUiState.Refreshing) {
-                
+                // 刷新时显示旋转的图标（类似backup项目的动画效果）
                 Icon(
                     painter = painterResource(id = R.drawable.ic_refresh),
                     contentDescription = null,
@@ -302,7 +290,7 @@ private fun ClassicsHeader(
                     tint = contentColor
                 )
             } else {
-                
+                // 下拉时根据进度旋转图标（0-180度）
                 Icon(
                     painter = painterResource(id = R.drawable.ic_refresh),
                     contentDescription = null,

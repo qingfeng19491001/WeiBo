@@ -3,43 +3,44 @@ package com.example.weibo.ui.home
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
-import com.example.weibo.core.ui.components.TopBarContainer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.example.weibo.core.ui.components.TopBarBackground
+import com.example.weibo.core.ui.components.TopBarContainer
 import com.example.weibo.data.model.Post
 import com.example.weibo.model.Channel
-
+import com.example.weibo.ui.channel.ChannelManagerScreen
 import com.example.weibo.ui.home.components.*
 import com.example.weibo.ui.home.dialogs.*
 import com.example.weibo.ui.home.preview.ImagePreviewScreen
 import com.example.weibo.ui.livestream.LiveStreamActivity
 import com.example.weibo.viewmodel.MainViewModel
 
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel,
+    feedListState: androidx.compose.foundation.lazy.LazyListState,
+    followListState: androidx.compose.foundation.lazy.LazyListState,
     onNavigateToTaskCenter: () -> Unit = {},
     onNavigateToWritePost: () -> Unit = {},
-    onNavigateToChannelManager: () -> Unit = {},
-    channelRefreshTrigger: Int = 0
+    onNavigateToImagePreview: (List<String>, Int) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
 
-    
     val pagerState = rememberPagerState(initialPage = currentTab) { 2 }
 
     LaunchedEffect(currentTab) {
@@ -53,132 +54,130 @@ fun HomeScreen(
             viewModel.switchTab(pagerState.currentPage)
         }
     }
+
     val feedPaging = viewModel.feedPaging.collectAsLazyPagingItems()
     val followPaging = viewModel.followPaging.collectAsLazyPagingItems()
 
-    
-    val channels = remember {
-        mutableStateListOf<Channel>()
-    }
+
+    val channels = remember { mutableStateListOf<Channel>() }
 
     var selectedChannelIndex by remember { mutableIntStateOf(0) }
+    var showChannelManager by remember { mutableStateOf(false) }
     var showAddMenu by remember { mutableStateOf(false) }
     var showCommentDialog by remember { mutableStateOf<String?>(null) }
     var showDeleteDialog by remember { mutableStateOf<String?>(null) }
     var showImagePreview by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
-
-    
-    LaunchedEffect(channelRefreshTrigger) {
-        channels.clear()
-        val loaded = loadChannelsFromPrefs(context)
-        if (loaded.isEmpty()) {
-            channels.addAll(getDefaultChannels())
-            saveChannelsToPrefs(context, channels)
-        } else {
-            channels.addAll(loaded)
-        }
-        
-        if (selectedChannelIndex >= channels.size) {
-            selectedChannelIndex = 0
+    LaunchedEffect(showImagePreview) {
+        showImagePreview?.let { (images, index) ->
+            onNavigateToImagePreview(images, index)
+            showImagePreview = null
         }
     }
 
-    
+    LaunchedEffect(showChannelManager) {
+        if (!showChannelManager) {
+            channels.clear()
+            val loaded = loadChannelsFromPrefs(context)
+            if (loaded.isEmpty()) {
+                val default = getDefaultChannels()
+                channels.addAll(default)
+                saveChannelsToPrefs(context, default)
+            } else {
+                channels.addAll(loaded)
+            }
+            if (selectedChannelIndex >= channels.size) {
+                selectedChannelIndex = 0
+            }
+        }
+    }
+
     val currentPostContent = remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-    ) {
-        Box(modifier = Modifier.weight(1f)) {
-            TopBarContainer(
-                topBar = {
-                    HomeTopBar(
-                        selectedTab = currentTab,
-                        onTabSelected = { index ->
-                            viewModel.switchTab(index)
-                        },
-                        channels = channels,
-                        selectedChannelIndex = selectedChannelIndex,
-                        onChannelSelected = { index ->
-                            selectedChannelIndex = index
-                            
-                            if (currentTab == 0) {
-                                feedPaging.refresh()
-                            }
-                        },
-                        onMoreChannelsClick = {
-                            onNavigateToChannelManager()
-                        },
-                        onEditClick = {
-                            
-                        },
-                        onHomeClick = {
-                            onNavigateToTaskCenter()
-                        },
-                        onAddClick = {
-                            showAddMenu = true
-                        }
-                    )
+    TopBarContainer(
+        topBarBackground = TopBarBackground.Solid(Color.White),
+        topBar = {
+            HomeTopBar(
+                selectedTab = currentTab,
+                onTabSelected = { index -> viewModel.switchTab(index) },
+                channels = channels,
+                selectedChannelIndex = selectedChannelIndex,
+                onChannelSelected = { index ->
+                    selectedChannelIndex = index
+                    if (currentTab == 0) {
+                        feedPaging.refresh()
+                    }
                 },
-                content = {
-                    
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
-                        when (page) {
-                            0 -> {
-                                
-                                ChannelPostList(
-                                    pagingItems = feedPaging,
-                                    viewModel = viewModel,
-                                    channelId = channels.getOrNull(selectedChannelIndex)?.id ?: "hot",
-                                    onCommentClick = { postId ->
-                                        showCommentDialog = postId
-                                    },
-                                    onShareClick = { postId ->
-                                        
-                                        val post = getPostFromPaging(feedPaging, postId)
-                                        currentPostContent.value = post?.content ?: ""
-                                        shareViaSystem(context, currentPostContent.value)
-                                    },
-                                    onImageClick = { images, index ->
-                                        showImagePreview = Pair(images, index)
-                                    }
-                                )
-                            }
+                onMoreChannelsClick = { showChannelManager = true },
+                onEditClick = {
+                },
+                onHomeClick = { onNavigateToTaskCenter() },
+                onAddClick = { showAddMenu = true }
+            )
+        },
+        content = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF5F5F5))
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    when (page) {
+                        0 -> {
+                            ChannelPostList(
+                                pagingItems = feedPaging,
+                                viewModel = viewModel,
+                                channelId = channels.getOrNull(selectedChannelIndex)?.id ?: "hot",
+                                onCommentClick = { postId ->
+                                    showCommentDialog = postId
+                                },
+                                onShareClick = { postId ->
+                                    val post = getPostFromPaging(feedPaging, postId)
+                                    currentPostContent.value = post?.content ?: ""
+                                    shareViaSystem(context, currentPostContent.value)
+                                },
+                                onImageClick = { images, index ->
+                                    showImagePreview = Pair(images, index)
+                                },
+                                listState = feedListState
+                            )
+                        }
 
-                            1 -> {
-                                
-                                FollowPostList(
-                                    pagingItems = followPaging,
-                                    viewModel = viewModel,
-                                    onCommentClick = { postId ->
-                                        showCommentDialog = postId
-                                    },
-                                    onShareClick = { postId ->
-                                        val post = getPostFromPaging(followPaging, postId)
-                                        currentPostContent.value = post?.content ?: ""
-                                        shareViaSystem(context, currentPostContent.value)
-                                    },
-                                    onDeleteClick = { postId ->
-                                        showDeleteDialog = postId
-                                    },
-                                    onImageClick = { images, index ->
-                                        showImagePreview = Pair(images, index)
-                                    }
-                                )
-                            }
+                        1 -> {
+                            FollowPostList(
+                                pagingItems = followPaging,
+                                viewModel = viewModel,
+                                onCommentClick = { postId ->
+                                    showCommentDialog = postId
+                                },
+                                onShareClick = { postId ->
+                                    val post = getPostFromPaging(followPaging, postId)
+                                    currentPostContent.value = post?.content ?: ""
+                                    shareViaSystem(context, currentPostContent.value)
+                                },
+                                onDeleteClick = { postId ->
+                                    showDeleteDialog = postId
+                                },
+                                onImageClick = { images, index ->
+                                    showImagePreview = Pair(images, index)
+                                },
+                                listState = followListState
+                            )
                         }
                     }
                 }
-            )
+            }
         }
+    )
+
+    if (showChannelManager) {
+        ChannelManagerScreen(
+            onBack = { showChannelManager = false }
+        )
     }
 
-    
     if (showAddMenu) {
         AddMenuPopup(
             onDismiss = { showAddMenu = false },
@@ -187,15 +186,12 @@ fun HomeScreen(
                 showAddMenu = false
             },
             onAlbum = {
-                
                 showAddMenu = false
             },
             onCheckIn = {
-                
                 showAddMenu = false
             },
             onLive = {
-                
                 val intent = Intent(context, LiveStreamActivity::class.java)
                 context.startActivity(intent)
                 showAddMenu = false
@@ -203,18 +199,16 @@ fun HomeScreen(
         )
     }
 
-    
     showCommentDialog?.let { postId ->
         CommentDialog(
             postId = postId,
             onDismiss = { showCommentDialog = null },
-            onCommentSent = { _ ->
-                viewModel.sharePost(postId) 
+            onCommentSent = { commentText ->
+                viewModel.sharePost(postId)
             }
         )
     }
 
-    
     showDeleteDialog?.let { postId ->
         DeleteDialog(
             onDismiss = { showDeleteDialog = null },
@@ -224,14 +218,7 @@ fun HomeScreen(
         )
     }
 
-    
-    showImagePreview?.let { (images, index) ->
-        ImagePreviewScreen(
-            imageUrls = images,
-            currentPosition = index,
-            onDismiss = { showImagePreview = null }
-        )
-    }
+
 }
 
 @Composable
@@ -241,22 +228,22 @@ private fun ChannelPostList(
     channelId: String,
     onCommentClick: (String) -> Unit,
     onShareClick: (String) -> Unit,
-    onImageClick: (List<String>, Int) -> Unit
+    onImageClick: (List<String>, Int) -> Unit,
+    listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     val context = LocalContext.current
 
-    
     LaunchedEffect(channelId) {
         when (channelId) {
             "hot" -> {
-                
                 if (pagingItems.itemCount == 0) {
                     viewModel.refreshHotFromApifox()
                 }
             }
 
             "campus_love" -> {
-                android.widget.Toast.makeText(context, "高校情感内容开发中", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, "高校情感内容开发中", android.widget.Toast.LENGTH_SHORT)
+                    .show()
             }
 
             "realtime" -> {
@@ -283,16 +270,14 @@ private fun ChannelPostList(
                 android.widget.Toast.makeText(context, "榜单内容开发中", android.widget.Toast.LENGTH_SHORT).show()
             }
 
-            else -> {
-                
-                
-            }
+            else -> Unit
         }
     }
 
     PostList(
         modifier = Modifier,
         pagingItems = pagingItems,
+        listState = listState,
         onLikeClick = { postId ->
             viewModel.likePost(postId)
         },
@@ -300,7 +285,7 @@ private fun ChannelPostList(
         onShareClick = onShareClick,
         onImageClick = onImageClick,
         showDeleteButton = false,
-        showUpdateBar = channelId == "hot", 
+        showUpdateBar = channelId == "hot",
         onRefresh = {
             if (channelId == "hot") {
                 viewModel.refreshHotFromApifox()
@@ -318,7 +303,8 @@ private fun FollowPostList(
     onCommentClick: (String) -> Unit,
     onShareClick: (String) -> Unit,
     onDeleteClick: (String) -> Unit,
-    onImageClick: (List<String>, Int) -> Unit
+    onImageClick: (List<String>, Int) -> Unit,
+    listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     if (pagingItems.itemCount == 0) {
         Box(
@@ -335,6 +321,7 @@ private fun FollowPostList(
         PostList(
             modifier = Modifier,
             pagingItems = pagingItems,
+            listState = listState,
             onLikeClick = { postId ->
                 viewModel.likePost(postId)
             },
@@ -350,7 +337,6 @@ private fun FollowPostList(
         )
     }
 }
-
 
 private fun getDefaultChannels(): List<Channel> {
     return listOf(

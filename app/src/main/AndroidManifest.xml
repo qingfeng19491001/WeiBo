@@ -95,9 +95,8 @@
         <!-- LiveStreamActivity - 直播页面（Compose 版本） -->
         <activity
             android:name="com.example.weibo.ui.livestream.LiveStreamActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
-            android:screenOrientation="landscape" />
+            android:exported="true"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
 
         <!-- SmsLoginActivity - 短信验证码登录页面（Compose 版本） -->
         <activity

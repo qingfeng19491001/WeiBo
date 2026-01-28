@@ -50,7 +50,6 @@ import com.example.weibo.viewmodel.DiscoverViewModel
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DiscoverScreen(
@@ -107,21 +106,6 @@ fun DiscoverScreen(
         }
     }
 
-    val nestedScrollConnection = remember(outerListState, collapsibleContentHeight) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (available.y < 0) {
-                    val currentScroll = outerListState.firstVisibleItemScrollOffset.toFloat()
-                    if (currentScroll < collapsibleContentHeight) {
-                        val remaining = collapsibleContentHeight - currentScroll
-                        val consumed = kotlin.math.max(available.y, -remaining)
-                        return Offset(0f, consumed)
-                    }
-                }
-                return Offset.Zero
-            }
-        }
-    }
 
     Column(
         modifier = modifier
@@ -172,7 +156,7 @@ fun DiscoverScreen(
                                 if (hotSearchList.isNotEmpty()) {
                                     val displayItems = remember(hotSearchList) { hotSearchList.take(10) }
                                     val gridRows = (displayItems.size + 1) / 2
-                                    val gridHeight = (gridRows * 42).dp 
+                                    val gridHeight = (gridRows * 42).dp // 估算每行高度
                                     HotSearchGrid(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -238,18 +222,17 @@ fun DiscoverScreen(
                         }
 
                         item {
-                            val screenHeight = LocalConfiguration.current.screenHeightDp.dp
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(screenHeight) 
+                                    .fillParentMaxHeight()
                                     .background(Color(0xFFF5F5F5))
                             ) {
                                 HorizontalPager(
                                     state = pagerState,
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .nestedScroll(nestedScrollConnection)
+                                        
                                 ) { page ->
                                     DiscoverTabContent(
                                         modifier = Modifier,
@@ -266,15 +249,6 @@ fun DiscoverScreen(
                                     )
                                 }
                             }
-                        }
-                    }
-
-                    if (isLoading) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
                         }
                     }
 
@@ -317,7 +291,6 @@ private fun DiscoverSearchBar(
                 .padding(top = 12.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -363,7 +336,7 @@ private fun DiscoverSearchBar(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            
+            // 搜索按钮：原项目样式（14sp字体，橙色，padding）
             Text(
                 text = "搜索",
                 fontSize = 14.sp,
@@ -505,7 +478,7 @@ private fun DiscoverAdCard(
         modifier = modifier
             .fillMaxWidth()
             .height(200.dp)
-            .clickable {  },
+            .clickable { /* TODO: Open ad link */ },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
@@ -572,7 +545,7 @@ private fun DiscoverTabContent(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
-            .nestedScroll(nestedScrollConnection),
+            ,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {

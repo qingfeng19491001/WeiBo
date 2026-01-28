@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,13 +29,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostList(
     modifier: Modifier = Modifier,
     pagingItems: LazyPagingItems<Post>,
+    listState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
     onLikeClick: (String) -> Unit,
     onCommentClick: (String) -> Unit,
     onShareClick: (String) -> Unit,
@@ -44,18 +44,19 @@ fun PostList(
     @Suppress("UNUSED_PARAMETER") showUpdateBar: Boolean = false,
     onRefresh: () -> Unit
 ) {
-    
     val isRefreshing = pagingItems.loadState.refresh is androidx.paging.LoadState.Loading
+
 
     ClassicsSwipeRefresh(
         isRefreshing = isRefreshing,
         onRefresh = {
-            
-            onRefresh()
-            pagingItems.refresh()
+            if (!isRefreshing) {
+                onRefresh()
+                pagingItems.refresh()
+            }
         },
         modifier = modifier.fillMaxSize(),
-        enabled = true,
+        enabled = listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0,
         headerHeight = 56,
         backgroundColor = Color.White,
         contentColor = Color(0xFFFF6600),
@@ -63,6 +64,7 @@ fun PostList(
         showShadow = false
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF5F5F5)),
@@ -116,7 +118,6 @@ private fun PostItem(
                 .fillMaxWidth()
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 10.dp)
         ) {
-            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -156,7 +157,7 @@ private fun PostItem(
                     }
                 }
 
-                if (showDeleteButton && onDeleteClick != null) {
+                if (showDeleteButton && onDeleteClick != null && post.id.startsWith("local_")) {
                     Box(
                         modifier = Modifier
                             .size(24.dp)
@@ -243,7 +244,6 @@ private fun PostItem(
     }
 }
 
-
 @Composable
 private fun PostImageGrid(
     images: List<String>,
@@ -322,7 +322,6 @@ private fun PostImageGrid(
         }
     }
 }
-
 
 @Composable
 private fun ActionButton(

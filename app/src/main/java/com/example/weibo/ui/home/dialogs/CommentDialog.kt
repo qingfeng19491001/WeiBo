@@ -2,6 +2,9 @@ package com.example.weibo.ui.home.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,7 +22,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -117,32 +119,56 @@ fun CommentDialog(
                         focusedBorderColor = Color.Transparent
                     )
                 )
-                Button(
-                    onClick = {
-                        if (commentText.text.isNotBlank()) {
-                            val newComment = CommentItem(
-                                id = System.currentTimeMillis().toString(),
-                                username = "我",
-                                content = commentText.text,
-                                time = "刚刚"
-                            )
-                            comments.add(0, newComment)
-                            onCommentSent(commentText.text)
-                            commentText = TextFieldValue("")
+                val sendButtonGradient = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFFFB74D),
+                        Color(0xFFFFD180)
+                    )
+                )
 
-                            Toast.makeText(
-                                context,
-                                "评论成功",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    },
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                val isSendEnabled = commentText.text.isNotBlank()
+
+                Box(
                     modifier = Modifier
                         .heightIn(min = 40.dp)
                         .defaultMinSize(minWidth = 60.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            brush = if (isSendEnabled) sendButtonGradient else Brush.linearGradient(
+                                colors = listOf(Color(0xFFFDBF8C), Color(0xFFFDBF8C))
+                            )
+                        )
                 ) {
-                    Text("发送")
+                    TextButton(
+                        onClick = {
+                            if (isSendEnabled) {
+                                val newComment = CommentItem(
+                                    id = System.currentTimeMillis().toString(),
+                                    username = "我",
+                                    content = commentText.text,
+                                    time = "刚刚"
+                                )
+                                comments.add(0, newComment)
+                                onCommentSent(commentText.text)
+                                commentText = TextFieldValue("")
+
+                                Toast.makeText(
+                                    context,
+                                    "评论成功",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        enabled = isSendEnabled,
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = Color.White,
+                            disabledContentColor = Color.White.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Text("发送")
+                    }
                 }
             }
 
@@ -184,7 +210,6 @@ private fun CommentItemView(comment: CommentItem) {
         )
     }
 }
-
 
 data class CommentItem(
     val id: String,
