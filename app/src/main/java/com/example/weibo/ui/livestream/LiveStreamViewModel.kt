@@ -38,9 +38,9 @@ class LiveStreamViewModel @Inject constructor() : ViewModel() {
         viewModelScope.launch {
             val mockComments = listOf(
                 Comment(++commentIdCounter, "布要熬夜啦", "周深好棒!", 7),
-                Comment(++commentIdCounter, "潘美祖", "好听！", 7),
-                Comment(++commentIdCounter, "潘美祖", "..................", 7),
-                Comment(++commentIdCounter, "潘美祖", "风来了永远的青春~", 7)
+                Comment(++commentIdCounter, "微风", "好听！", 7),
+                Comment(++commentIdCounter, "微风", "..................", 7),
+                Comment(++commentIdCounter, "微风", "风来了永远的青春~", 7)
             )
 
             mockComments.forEach { comment ->

@@ -529,18 +529,18 @@ private fun LiveGiftSheet(
     val context = LocalContext.current
     val gifts = remember {
         listOf(
-            LiveGift(21, "比心", 1, "g21", "ga21.svga"),
-            LiveGift(22, "作品大麦", 2, "g22", "ga22.svga"),
-            LiveGift(23, "么么哒", 52, "g23", "ga23.svga"),
-            LiveGift(24, "生日蛋糕", 52, "g24", "ga24.svga"),
-            LiveGift(25, "喜欢你呀", 99, "g25", "ga25.svga"),
-            LiveGift(26, "收视长虹", 2, "g26", "ga26.svga"),
-            LiveGift(27, "助力票", 1, "g27", "ga27.svga"),
-            LiveGift(28, "守护之约", 88, "g28", "ga28.svga"),
-            LiveGift(29, "礼物", 6, "g29", "ga29.svga"),
-            LiveGift(30, "礼物", 6, "g30", "ga30.svga"),
-            LiveGift(31, "礼物", 6, "g31", "ga31.svga"),
-            LiveGift(32, "礼物", 6, "g32", "ga32.svga")
+            LiveGift(21, "财神到", 1, "g21", "ga21.svga"),
+            LiveGift(22, "马车", 2, "g22", "ga22.svga"),
+            LiveGift(23, "跑车", 52, "g23", "ga23.svga"),
+            LiveGift(24, "香槟", 52, "g24", "ga24.svga"),
+            LiveGift(25, "浪漫气球", 99, "g25", "ga25.svga"),
+            LiveGift(26, "旋转木马", 2, "g26", "ga26.svga"),
+            LiveGift(27, "金屋跑车", 1, "g27", "ga27.svga"),
+            LiveGift(28, "直升机", 88, "g28", "ga28.svga"),
+            LiveGift(29, "独角兽", 6, "g29", "ga29.svga"),
+            LiveGift(30, "城堡", 6, "g30", "ga30.svga"),
+            LiveGift(31, "烟花轮船", 6, "g31", "ga31.svga"),
+            LiveGift(32, "火箭", 6, "g32", "ga32.svga")
         )
     }
 
