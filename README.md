@@ -342,7 +342,7 @@ VideoUrlResolver (IO)
 
 <div align="center">
 
-[⬆ 回到顶部](#weibocomposedemo)
+[⬆ 回到顶部](#weibo)
 
 **⭐ 如果觉得项目有帮助，请给个 Star！**
 
