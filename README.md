@@ -1,4 +1,4 @@
-# Weibo（Compose）Demo
+# Weibo（Compose）
 
 <div align="center">
 
@@ -31,7 +31,7 @@
   - `app/src/main/java/com/example/weibo/video/player/ExoVideoPlayerManager.kt`
   - `app/src/main/java/com/example/weibo/video/player/ExoVideoPlayerView.kt`
   - `app/src/main/java/com/example/weibo/util/VideoUrlResolver.kt`
-- **视频页点赞动画（双击心形 + 粒子爆裂）**：
+- **视频页点赞动画（双击点赞 + 粒子爆裂）**：
   - `app/src/main/java/com/example/weibo/ui/video/LikeBurstOverlay.kt`
   - `app/src/main/java/com/example/weibo/ui/video/LikeBurstEffect.kt`
 - **直播间礼物特效（SVGA 队列播放）+ 点赞漂浮**：
@@ -204,7 +204,7 @@ WeiBo/
 
 **实现要点**：
 - `detectTapGestures(onDoubleTap)` 获取双击坐标
-- 大心形 Icon：`Animatable(scale/alpha)` 实现 pop + fade，并按坐标 `offset`
+- 点赞 Icon：`Animatable(scale/alpha)` 实现 pop + fade，并按坐标 `offset`
 - `LikeBurstOverlay`：以点击坐标为中心绘制扩散粒子
 - 右侧点赞按钮：缩放反馈 + `LikeBurstEffect` 小爆裂
 
@@ -292,7 +292,7 @@ VideoUrlResolver (IO)
 - [x] PhotoView 大图预览（信息流入口）
 - [x] 发布页 + 媒体选择器（图片/视频/拍照）
 - [x] 竖滑视频流（Media3 ExoPlayer）+ 预解析/预加载
-- [x] 视频页双击点赞动效（心形 + 粒子）
+- [x] 视频页双击点赞动效（点赞Icon + 粒子）
 - [x] 直播间礼物 SVGA 队列播放 + 点赞漂浮
 
 ---
